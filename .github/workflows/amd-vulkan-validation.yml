@@ -19,6 +19,11 @@ on:
 permissions:
   contents: read
 
+# Keep only the latest Vulkan validation for this PR in the runner queue.
+concurrency:
+  group: amd-vulkan-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   linux-vulkan-build:
     name: Linux x86_64 GGML Vulkan compile
