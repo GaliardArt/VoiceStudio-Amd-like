@@ -68,6 +68,6 @@ jobs:
         run: |
           set -euo pipefail
           test -s bin/omnivoice-tts-linux-x86_64
-          grep -E '^[0-9a-f]{64}  omnivoice-tts-linux-x86_64$' bin/checksums.sha256
-          grep '  omnivoice-tts-linux-x86_64
- bin/checksums.sha256 | (cd bin && sha256sum -c -)
+          grep -E '^[0-9a-f]{64}  omnivoice-tts-linux-x86_64
+ bin/checksums.sha256
+          grep -F '  omnivoice-tts-linux-x86_64' bin/checksums.sha256 | (cd bin && sha256sum -c -)
