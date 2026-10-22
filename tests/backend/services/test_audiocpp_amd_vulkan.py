@@ -71,3 +71,20 @@ CPU:0 "Host CPU" [CPU]
     assert selected.device.target == "cpu"
     assert selected.device.hardware_family == "cpu"
     assert bootstrap.runtime_targets(devices) == ("cpu",)
+
+
+def test_native_radeon_beats_software_vulkan_when_both_are_exposed():
+    bootstrap = _bootstrap()
+    # Deliberately list the software adapter first to prove selection depends
+    # on device classification/priority, not the registry's output order.
+    devices = bootstrap.parse_device_list(""" 
+Vulkan:0 "llvmpipe (LLVM 19.1.7, 256 bits)" [GPU]
+Vulkan:1 "AMD Radeon RX 580 (RADV POLARIS10)" [GPU]
+CPU:0 "Host CPU" [CPU]
+""".strip())
+
+    selected = bootstrap.select_device(devices)
+
+    assert selected.device.name == "AMD Radeon RX 580 (RADV POLARIS10)"
+    assert selected.device.backend == "vulkan"
+    assert selected.device.target == "vulkan"
