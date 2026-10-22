@@ -95,12 +95,15 @@ Older GPUs such as Polaris/RX 580 and newer Radeon families must be tested
 individually; memory capacity, driver version, operating system and model
 workload can change the result. CPU fallback remains the safe recovery path.
 
-Quant selection still uses the existing host-capability probe. On Windows with
-a CUDA-only PyTorch install, that probe may not see Radeon VRAM even when the
-separately built Vulkan GGUF runtime can use the card, so auto-selection may
-conservatively choose the CPU Q4 quant. The Settings quant override can be used
-after checking actual available VRAM; do not assume the Vulkan runtime makes
-the entire GPU memory available to the model.
+Quant selection still uses the existing PyTorch host-capability probe,
+which does not query Vulkan devices. On Windows with a CUDA-only PyTorch
+install—or on Linux with a CPU-only/incompatible PyTorch build—the probe may
+not see Radeon VRAM even when the separately built Vulkan GGUF runtime can use
+the card, so auto-selection may conservatively choose the CPU Q4 quant. The
+Settings quant override can be used after checking actual available VRAM; do
+not assume the Vulkan runtime makes the entire GPU memory available to the
+model. This limitation affects quant selection only; it does not by itself
+determine whether the native Vulkan runtime can enumerate the GPU.
 
 This is an engineering proof of concept, not a claim that every AMD GPU is
 supported or that performance/quality has been validated. The GGUF model's
