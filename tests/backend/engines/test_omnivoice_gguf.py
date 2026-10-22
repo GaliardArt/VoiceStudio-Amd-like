@@ -648,7 +648,6 @@ def test_select_default_falls_back_on_zero_byte_placeholder(monkeypatch, tmp_pat
     assert gguf_backend.select_default_engine() == "omnivoice"
 
 
-
 def test_language_mapping_normalizes_brazilian_portuguese_locale():
     from engines.omnivoice_gguf.backend import _iso_to_omnivoice_lang
 
