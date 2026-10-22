@@ -646,3 +646,15 @@ def test_select_default_falls_back_on_zero_byte_placeholder(monkeypatch, tmp_pat
     monkeypatch.setattr(gguf_backend, "_is_macos_quarantined", lambda p: False)
 
     assert gguf_backend.select_default_engine() == "omnivoice"
+
+
+
+def test_language_mapping_normalizes_brazilian_portuguese_locale():
+    from engines.omnivoice_gguf.backend import _iso_to_omnivoice_lang
+
+    assert _iso_to_omnivoice_lang("pt") == "Portuguese"
+    assert _iso_to_omnivoice_lang("pt-BR") == "Portuguese"
+    assert _iso_to_omnivoice_lang("pt_BR") == "Portuguese"
+    assert _iso_to_omnivoice_lang("pt-PT") == "Portuguese"
+    assert _iso_to_omnivoice_lang("en-US") == "English"
+    assert _iso_to_omnivoice_lang("auto") is None
