@@ -22,6 +22,18 @@
   </p>
 </div>
 
+> **VoiceStudio — AMD Vulkan / RX 580 experimental fork**
+>
+> This fork explores a practical, local voice-generation path for AMD Radeon GPUs, with special attention to the **Radeon RX 580 (Polaris, 8 GB variants)** and **Brazilian Portuguese (pt-BR)**. The goal is to make the existing VoiceStudio workflow usable on older AMD hardware—not to claim that all engines or models already accelerate on every Radeon GPU.
+>
+> **Current status: experimental.** The project has a Vulkan-enabled OmniVoice GGUF build path and automated Linux build validation. A successful build is not proof of GPU inference: real RX 580 execution, speed/VRAM measurements, and Brazilian Portuguese voice-quality evaluation still need testing on physical hardware. No RX 580 hardware validation is claimed here.
+>
+> - **AMD Vulkan build notes:** [OmniVoice GGUF engine guide](docs/engines/omnivoice-gguf.md)
+> - **Engine architecture and supported engines:** [Engine catalog](docs/engines/README.md)
+> - **What the current CI proves:** compilation and automated checks only; it does not provide a physical AMD GPU.
+>
+> This is an independent fork of [debpalash/VoiceStudio](https://github.com/debpalash/VoiceStudio). Upstream download links and release badges below refer to the upstream project; they are **not** releases of this experimental fork.
+
 ![A tour of the Electron app: voice cloning, voice design, dubbing, and model management](docs/media/electron/voicestudio.gif)
 
 ## Your voice. Your workflow.
