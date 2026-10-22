@@ -9,7 +9,12 @@
 # Usage:
 #   scripts/build-omnivoice-tts.sh \
 #       --platform {darwin-arm64|darwin-x86_64|windows-x86_64|linux-x86_64|linux-aarch64} \
-#       --commit-sha <40hex>
+#       --commit-sha <40hex> [--backend default|vulkan]
+#
+# AMD Vulkan proof of concept (Windows/Linux x86_64): pass --backend vulkan.
+# This enables GGML's Vulkan backend at compile time; a compatible Vulkan
+# SDK/toolchain and driver are still required. It does not guarantee that a
+# specific GPU/model will fit or that inference actually offloads to the GPU.
 #
 # Required tools: git, cmake, ninja or make, a working C++17 compiler,
 # `sha256sum` (Linux) or `shasum -a 256` (macOS) or `CertUtil` (Windows).
@@ -22,6 +27,7 @@ set -euo pipefail
 
 PLATFORM=""
 COMMIT_SHA=""
+BACKEND="default"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -31,6 +37,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --commit-sha)
             COMMIT_SHA="$2"
+            shift 2
+            ;;
+        --backend)
+            BACKEND="$2"
             shift 2
             ;;
         -h|--help)
@@ -46,6 +56,15 @@ done
 
 if [[ -z "$PLATFORM" || -z "$COMMIT_SHA" ]]; then
     echo "Both --platform and --commit-sha are required." >&2
+    exit 1
+fi
+
+if [[ "$BACKEND" != "default" && "$BACKEND" != "vulkan" ]]; then
+    echo "Unknown --backend: $BACKEND (expected default or vulkan)." >&2
+    exit 1
+fi
+if [[ "$BACKEND" == "vulkan" && "$PLATFORM" != "windows-x86_64" && "$PLATFORM" != "linux-x86_64" ]]; then
+    echo "--backend vulkan currently supports windows-x86_64 and linux-x86_64 only." >&2
     exit 1
 fi
 
@@ -105,7 +124,12 @@ esac
 
 case "$PLATFORM" in
     linux-x86_64)
-        if [[ -x ./buildcpu.sh ]]; then
+        if [[ "$BACKEND" == "vulkan" ]]; then
+            # Explicit opt-in: fail visibly if Vulkan development dependencies
+            # are missing rather than silently producing a CPU-only binary.
+            cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_VULKAN=ON
+            cmake --build build --config Release -j
+        elif [[ -x ./buildcpu.sh ]]; then
             ./buildcpu.sh
         else
             cmake -B build -DCMAKE_BUILD_TYPE=Release
@@ -146,7 +170,11 @@ case "$PLATFORM" in
     windows-x86_64)
         # CI runs this from MSYS / git-bash; CMake picks up the MSVC
         # toolchain via the GitHub Actions runner's default env.
-        cmake -B build -DCMAKE_BUILD_TYPE=Release
+        if [[ "$BACKEND" == "vulkan" ]]; then
+            cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_VULKAN=ON
+        else
+            cmake -B build -DCMAKE_BUILD_TYPE=Release
+        fi
         cmake --build build --config Release -j
         cp -v build/Release/omnivoice-tts.exe "$BIN_DIR/$OUT_NAME"
         copy_shared_libs
