@@ -195,10 +195,14 @@ def _vulkan_hardware_family(name: str) -> str:
 
 
 def _device_families(registry: str, name: str, kind: str) -> tuple[str, str]:
-    # Software adapters such as Vulkan llvmpipe may be listed by a GPU
-    # registry but still execute on the CPU. Keep their runtime backend for
-    # explicit overrides while reporting and routing them as CPU work.
-    if kind == "CPU":
+    # Software adapters such as Vulkan llvmpipe/lavapipe may be listed as
+    # GPUs but execute on the CPU. Never classify them as Radeon acceleration.
+    low_name = name.casefold()
+    software_vulkan = registry == "Vulkan" and any(
+        token in low_name
+        for token in ("llvmpipe", "lavapipe", "swiftshader", "software rasterizer")
+    )
+    if kind == "CPU" or software_vulkan:
         return "cpu", "cpu"
     if registry in {"CUDA", "MUSA"}:
         return "cuda", "cuda"
@@ -405,7 +409,9 @@ def _priority(device: AudioCPPDevice) -> tuple[int, int]:
         # Tensor-parallel meta devices are valid explicit targets, but their
         # resource footprint is not safe to choose implicitly over CPU.
         rank = 8
-    elif device.backend != "cpu" and device.kind == "CPU":
+    elif device.backend != "cpu" and (
+        device.kind == "CPU" or device.target == "cpu"
+    ):
         # Native CPU is the predictable fallback. Software adapters remain
         # available to an explicit backend override but never win auto mode.
         rank = 7

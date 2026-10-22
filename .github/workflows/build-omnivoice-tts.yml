@@ -36,6 +36,11 @@ on:
 permissions:
   contents: read
 
+# Runtime builds are expensive; superseded PR builds should not occupy the queue.
+concurrency:
+  group: build-omnivoice-tts-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-omnivoice-tts:
     name: Build omnivoice-tts (${{ matrix.platform }})

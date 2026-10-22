@@ -60,6 +60,55 @@ build falls back to CPU. Expect roughly 2–4x slower generation than macOS
 Metal while upstream Mesa and llama.cpp Vulkan optimizations mature; still
 well ahead of CPU-only.
 
+## AMD Radeon Vulkan proof of concept
+
+The default GGUF build remains unchanged. For an **experimental** Vulkan
+build on Windows x86_64 or Linux x86_64, use a source checkout and pass
+`--backend vulkan` to the pinned runtime build script:
+
+```bash
+scripts/build-omnivoice-tts.sh \
+  --platform windows-x86_64 \
+  --commit-sha 886fc079838ca7400cb2b42b36e2a65aa1daabe8 \
+  --backend vulkan
+```
+
+On Linux, replace the platform with `linux-x86_64`. The build machine needs a
+working C++ toolchain, CMake, the Vulkan SDK/development headers, and shader
+compiler dependencies required by GGML Vulkan. The build is intentionally
+opt-in and fails if the Vulkan configuration or compilation fails; it does
+not silently label a CPU build as Vulkan.
+
+**Important:** enabling Vulkan at compile time is only the first gate. The
+installed Vulkan driver must expose the Radeon device, the runtime must
+successfully load the model, and inference must actually offload work to the
+GPU. Validate those separately with runtime logs/device diagnostics and a
+real synthesis. The pinned runtime logs the selected backend at load time;
+its low-level selector also supports `GGML_BACKEND=Vulkan0` to force the
+first registered Vulkan device during a diagnostic run. This override is
+intentionally not set by default: if that device is absent, initialization
+can fail rather than falling back automatically. Remove the override to
+return to automatic backend selection.
+
+A detected adapter or a successful build alone is not proof of acceleration.
+Older GPUs such as Polaris/RX 580 and newer Radeon families must be tested
+individually; memory capacity, driver version, operating system and model
+workload can change the result. CPU fallback remains the safe recovery path.
+
+Quant selection still uses the existing PyTorch host-capability probe,
+which does not query Vulkan devices. On Windows with a CUDA-only PyTorch
+install—or on Linux with a CPU-only/incompatible PyTorch build—the probe may
+not see Radeon VRAM even when the separately built Vulkan GGUF runtime can use
+the card, so auto-selection may conservatively choose the CPU Q4 quant. The
+Settings quant override can be used after checking actual available VRAM; do
+not assume the Vulkan runtime makes the entire GPU memory available to the
+model. This limitation affects quant selection only; it does not by itself
+determine whether the native Vulkan runtime can enumerate the GPU.
+
+This is an engineering proof of concept, not a claim that every AMD GPU is
+supported or that performance/quality has been validated. The GGUF model's
+separate licensing terms still apply; a Vulkan build does not change them.
+
 ## Integrity and self-healing
 
 Before reporting ready, the engine:
@@ -78,6 +127,7 @@ Before reporting ready, the engine:
 - Cloning from a reference clip (with optional transcript) and style
   instructions are supported; no voice design.
 - Same multilingual surface as OmniVoice ([languages.md](../languages.md)).
+- Regional language tags such as `pt-BR` and `pt_BR` are normalized to the CLI's `Portuguese` label. This selects Portuguese as a language; it does not establish Brazilian-dialect pronunciation quality, which must be evaluated with real samples.
 - Because generation runs in another process, the app's own GPU counters
   don't see its allocations — diagnostics label it accordingly.
 
