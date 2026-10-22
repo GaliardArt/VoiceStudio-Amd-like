@@ -6,7 +6,6 @@ Vulkan inference has been validated on physical Radeon hardware.
 from __future__ import annotations
 
 import importlib
-from types import SimpleNamespace
 
 
 def _bootstrap():
@@ -44,6 +43,7 @@ CPU:0 "Host CPU" [CPU]
     assert selected.device.backend == "vulkan"
     assert selected.device.target == "vulkan"
     assert selected.device.hardware_family == "rocm"
+    assert bootstrap.runtime_targets(devices) == ("vulkan", "cpu")
 
 
 def test_cpu_remains_available_when_no_radeon_vulkan_device_is_exposed():
