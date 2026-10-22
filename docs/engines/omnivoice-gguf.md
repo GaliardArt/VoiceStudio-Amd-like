@@ -117,6 +117,7 @@ Before reporting ready, the engine:
 - Cloning from a reference clip (with optional transcript) and style
   instructions are supported; no voice design.
 - Same multilingual surface as OmniVoice ([languages.md](../languages.md)).
+- Regional language tags such as `pt-BR` and `pt_BR` are normalized to the CLI's `Portuguese` label. This selects Portuguese as a language; it does not establish Brazilian-dialect pronunciation quality, which must be evaluated with real samples.
 - Because generation runs in another process, the app's own GPU counters
   don't see its allocations — diagnostics label it accordingly.
 
