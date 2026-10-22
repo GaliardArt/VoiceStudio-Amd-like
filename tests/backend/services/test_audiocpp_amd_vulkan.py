@@ -55,3 +55,19 @@ def test_cpu_remains_available_when_no_radeon_vulkan_device_is_exposed():
     assert selected.device.backend == "cpu"
     assert selected.device.target == "cpu"
     assert selected.fallback_reason is None
+
+
+
+def test_software_vulkan_adapter_does_not_beat_native_cpu_in_auto_mode():
+    bootstrap = _bootstrap()
+    devices = bootstrap.parse_device_list("""
+Vulkan:0 "llvmpipe (LLVM 19.1.7, 256 bits)" [GPU]
+CPU:0 "Host CPU" [CPU]
+""")
+
+    selected = bootstrap.select_device(devices)
+
+    assert selected.device.backend == "cpu"
+    assert selected.device.target == "cpu"
+    assert selected.device.hardware_family == "cpu"
+    assert bootstrap.runtime_targets(devices) == ("cpu",)
