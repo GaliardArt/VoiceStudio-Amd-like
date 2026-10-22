@@ -83,11 +83,17 @@ not silently label a CPU build as Vulkan.
 installed Vulkan driver must expose the Radeon device, the runtime must
 successfully load the model, and inference must actually offload work to the
 GPU. Validate those separately with runtime logs/device diagnostics and a
-real synthesis. A detected adapter or a successful build alone is not proof
-of acceleration. Older GPUs such as Polaris/RX 580 and newer Radeon families
-must be tested individually; memory capacity, driver version, operating
-system and model workload can change the result. CPU fallback remains the
-safe recovery path.
+real synthesis. The pinned runtime logs the selected backend at load time;
+its low-level selector also supports `GGML_BACKEND=Vulkan0` to force the
+first registered Vulkan device during a diagnostic run. This override is
+intentionally not set by default: if that device is absent, initialization
+can fail rather than falling back automatically. Remove the override to
+return to automatic backend selection.
+
+A detected adapter or a successful build alone is not proof of acceleration.
+Older GPUs such as Polaris/RX 580 and newer Radeon families must be tested
+individually; memory capacity, driver version, operating system and model
+workload can change the result. CPU fallback remains the safe recovery path.
 
 This is an engineering proof of concept, not a claim that every AMD GPU is
 supported or that performance/quality has been validated. The GGUF model's
