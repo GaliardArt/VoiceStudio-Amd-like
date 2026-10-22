@@ -172,10 +172,13 @@ case "$PLATFORM" in
         # toolchain via the GitHub Actions runner's default env.
         if [[ "$BACKEND" == "vulkan" ]]; then
             cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_VULKAN=ON
+            # Vulkan shader compilation is memory-intensive; keep the opt-in
+            # path bounded unless the caller explicitly raises the limit.
+            cmake --build build --config Release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL:-2}"
         else
             cmake -B build -DCMAKE_BUILD_TYPE=Release
+            cmake --build build --config Release -j
         fi
-        cmake --build build --config Release -j
         cp -v build/Release/omnivoice-tts.exe "$BIN_DIR/$OUT_NAME"
         copy_shared_libs
         ;;
