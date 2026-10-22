@@ -60,6 +60,39 @@ build falls back to CPU. Expect roughly 2–4x slower generation than macOS
 Metal while upstream Mesa and llama.cpp Vulkan optimizations mature; still
 well ahead of CPU-only.
 
+## AMD Radeon Vulkan proof of concept
+
+The default GGUF build remains unchanged. For an **experimental** Vulkan
+build on Windows x86_64 or Linux x86_64, use a source checkout and pass
+`--backend vulkan` to the pinned runtime build script:
+
+```bash
+scripts/build-omnivoice-tts.sh \
+  --platform windows-x86_64 \
+  --commit-sha 886fc079838ca7400cb2b42b36e2a65aa1daabe8 \
+  --backend vulkan
+```
+
+On Linux, replace the platform with `linux-x86_64`. The build machine needs a
+working C++ toolchain, CMake, the Vulkan SDK/development headers, and shader
+compiler dependencies required by GGML Vulkan. The build is intentionally
+opt-in and fails if the Vulkan configuration or compilation fails; it does
+not silently label a CPU build as Vulkan.
+
+**Important:** enabling Vulkan at compile time is only the first gate. The
+installed Vulkan driver must expose the Radeon device, the runtime must
+successfully load the model, and inference must actually offload work to the
+GPU. Validate those separately with runtime logs/device diagnostics and a
+real synthesis. A detected adapter or a successful build alone is not proof
+of acceleration. Older GPUs such as Polaris/RX 580 and newer Radeon families
+must be tested individually; memory capacity, driver version, operating
+system and model workload can change the result. CPU fallback remains the
+safe recovery path.
+
+This is an engineering proof of concept, not a claim that every AMD GPU is
+supported or that performance/quality has been validated. The GGUF model's
+separate licensing terms still apply; a Vulkan build does not change them.
+
 ## Integrity and self-healing
 
 Before reporting ready, the engine:
