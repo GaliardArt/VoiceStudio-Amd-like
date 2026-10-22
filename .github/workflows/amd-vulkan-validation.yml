@@ -1,0 +1,72 @@
+# Targeted validation for the opt-in AMD Vulkan GGUF runtime path.
+# This verifies a Linux x86_64 Vulkan-enabled binary can be compiled; it does
+# not claim that a hosted runner has an AMD GPU or that RX 580 inference works.
+name: AMD Vulkan validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/build-omnivoice-tts.sh"
+      - "backend/engines/omnivoice_gguf/**"
+      - "backend/engines/audiocpp/**"
+      - "tests/backend/engines/test_omnivoice_gguf.py"
+      - "tests/backend/services/test_audiocpp_amd_vulkan.py"
+      - "docs/engines/omnivoice-gguf.md"
+      - ".github/workflows/amd-vulkan-validation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux-vulkan-build:
+    name: Linux x86_64 GGML Vulkan compile
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Install Vulkan build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            git \
+            libvulkan-dev \
+            glslc \
+            spirv-headers
+
+      - name: Validate build script arguments and shell syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n scripts/build-omnivoice-tts.sh
+          if bash scripts/build-omnivoice-tts.sh --platform linux-x86_64 --commit-sha 886fc079838ca7400cb2b42b36e2a65aa1daabe8 --backend invalid; then
+            echo "::error::invalid backend unexpectedly accepted"
+            exit 1
+          fi
+          if bash scripts/build-omnivoice-tts.sh --platform darwin-arm64 --commit-sha 886fc079838ca7400cb2b42b36e2a65aa1daabe8 --backend vulkan; then
+            echo "::error::Vulkan unexpectedly accepted on an unsupported platform"
+            exit 1
+          fi
+
+      - name: Build pinned OmniVoice runtime with Vulkan enabled
+        env:
+          CMAKE_BUILD_PARALLEL_LEVEL: "2"
+        run: |
+          bash scripts/build-omnivoice-tts.sh \
+            --platform linux-x86_64 \
+            --commit-sha 886fc079838ca7400cb2b42b36e2a65aa1daabe8 \
+            --backend vulkan
+
+      - name: Verify binary and checksum manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s bin/omnivoice-tts-linux-x86_64
+          grep -E '^[0-9a-f]{64}  omnivoice-tts-linux-x86_64$' bin/checksums.sha256
+          (cd bin && sha256sum -c checksums.sha256)
