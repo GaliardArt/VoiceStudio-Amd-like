@@ -128,7 +128,7 @@ case "$PLATFORM" in
             # Explicit opt-in: fail visibly if Vulkan development dependencies
             # are missing rather than silently producing a CPU-only binary.
             cmake -B build -DCMAKE_BUILD_TYPE=Release -DGGML_VULKAN=ON
-            cmake --build build --config Release -j
+            cmake --build build --config Release --parallel "${CMAKE_BUILD_PARALLEL_LEVEL:-2}"
         elif [[ -x ./buildcpu.sh ]]; then
             ./buildcpu.sh
         else
