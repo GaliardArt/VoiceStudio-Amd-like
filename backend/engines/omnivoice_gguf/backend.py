@@ -849,10 +849,17 @@ def _iso_to_omnivoice_lang(code: Optional[str]) -> Optional[str]:
     """
     if not code:
         return None
-    c = code.strip().lower()
+    c = code.strip().lower().replace("_", "-")
     if c in ("auto", "multi", ""):
         return None
-    return _ISO_TO_OV.get(c, c.capitalize())
+    # The native CLI accepts language labels, not locale tags. Reduce
+    # regional variants (pt-BR, pt-PT, en-US, zh-CN) to the model's
+    # supported base-language label instead of emitting invalid labels like
+    # "Pt-br". This does not promise dialect-specific pronunciation.
+    if c in _ISO_TO_OV:
+        return _ISO_TO_OV[c]
+    base = c.split("-", 1)[0]
+    return _ISO_TO_OV.get(base, c.capitalize())
 
 
 _ISO_TO_OV = {
